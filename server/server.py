@@ -1,5 +1,6 @@
 import argparse
 import asyncio
+from asyncio import sleep
 import json
 import logging
 import os
@@ -80,7 +81,6 @@ async def javascript(request):
 async def offer(request):
     params = await request.json()
     offer = RTCSessionDescription(sdp=params["sdp"], type=params["type"])
-
     pc = RTCPeerConnection()
     pc_id = "PeerConnection(%s)" % uuid.uuid4()
     pcs.add(pc)
@@ -102,9 +102,11 @@ async def offer(request):
         @channel.on("message")
         def on_message(message):
             if isinstance(message, str):
-                if message.startswith("Left was pressed"):
-                    log_info("LEFT")
-
+                try:
+                    y = json.loads(message)
+                    log_info(str(y))
+                except ValueError as e:
+                    pass
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():

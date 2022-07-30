@@ -148,6 +148,35 @@ function start() {
                 }
             });
 
+// Start Gamepad
+
+            dc.onopen = function() {
+                dcInterval = setInterval(function() {
+                    const update = () => {
+                    let gamepadObj = {};
+                    let axes = [];
+                    gamepadObj.axes = axes;
+                        for (const gamepad of navigator.getGamepads()) {
+                            if (!gamepad) continue;
+                                for (const [index, axis] of gamepad.axes.entries()) {
+                                    let value= (axis * 0.5 + 0.5)
+                                    let axle = {
+                                        index,
+                                        value
+                                    };
+                                    gamepadObj.axes.push(axle);
+                                }
+                        }
+                     console.log(gamepadObj);
+                     var gamepadObjStr = JSON.stringify(gamepadObj);
+                    dc.send(gamepadObjStr);
+                    };
+                    update();
+                }, 10);
+                };
+
+// End Gamepad
+
 //        dc.onopen = function() {
 //            dataChannelLog.textContent += '- open\n';
 //            dcInterval = setInterval(function() {
