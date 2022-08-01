@@ -99,14 +99,29 @@ async def offer(request):
 
     @pc.on("datachannel")
     def on_datachannel(channel):
-        @channel.on("message")
-        def on_message(message):
-            if isinstance(message, str):
-                try:
-                    y = json.loads(message)
-                    log_info(str(y))
-                except ValueError as e:
-                    pass
+        print(channel.label, "with id", channel.id, "-", "created by remote party")
+        if channel.label == "chat":
+            @channel.on("message")
+            def on_message(message):
+                log_info(str(message))
+                log_info("chat")
+                if isinstance(message, str):
+                    try:
+                        y = json.loads(message)
+                        log_info(str(y))
+                    except ValueError as e:
+                        pass
+        if channel.label == "joy":
+            @channel.on("message")
+            def on_message(message):
+                log_info(str(message))
+                log_info("joy")
+                if isinstance(message, str):
+                    try:
+                        y = json.loads(message)
+                        log_info(str(y))
+                    except ValueError as e:
+                        pass
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():

@@ -126,9 +126,7 @@ function start() {
     }
 
     if (document.getElementById('use-datachannel').checked) {
-        var parameters = JSON.parse(document.getElementById('datachannel-parameters').value);
-
-        dc = pc.createDataChannel('chat', parameters);
+        dc = pc.createDataChannel('chat');
         dc.onclose = function() {
             clearInterval(dcInterval);
             dataChannelLog.textContent += '- close\n';
@@ -141,39 +139,52 @@ function start() {
                 dc.send(message);
                 }
 
-            else if(event.keyCode == 39) {
-                console.log('Right was pressed');
-                var message = 'Right was pressed '
-                dc.send(message);
-                }
             });
 
 // Start Gamepad
 
             dc.onopen = function() {
-                dcInterval = setInterval(function() {
-                    const update = () => {
-                    let gamepadObj = {};
-                    let axes = [];
-                    gamepadObj.axes = axes;
-                        for (const gamepad of navigator.getGamepads()) {
-                            if (!gamepad) continue;
-                                for (const [index, axis] of gamepad.axes.entries()) {
-                                    let value= (axis * 0.5 + 0.5)
-                                    let axle = {
-                                        index,
-                                        value
-                                    };
-                                    gamepadObj.axes.push(axle);
-                                }
-                        }
-                     console.log(gamepadObj);
-                     var gamepadObjStr = JSON.stringify(gamepadObj);
-                    dc.send(gamepadObjStr);
-                    };
-                    update();
-                }, 10);
-                };
+                window.addEventListener('gamepadconnected', (event) => {
+                    dcInterval = setInterval(function() {
+                        const update = () => {
+                        let gamepadObj = {};
+                        let axes = [];
+                        gamepadObj.axes = axes;
+                            for (const gamepad of navigator.getGamepads()) {
+                                if (!gamepad) continue;
+                                    for (const [index, axis] of gamepad.axes.entries()) {
+                                        let value= (axis * 0.5 + 0.5)
+                                        let axle = {
+                                            index,
+                                            value
+                                        };
+                                        gamepadObj.axes.push(axle);
+                                    }
+                            }
+                         console.log(gamepadObj);
+                         var gamepadObjStr = JSON.stringify(gamepadObj);
+                        dc.send(gamepadObjStr);
+                        };
+                        update();
+                    }, 10);
+                })
+             };
+
+
+        dc1 = pc.createDataChannel('joy');
+        dc1.onclose = function() {
+            clearInterval(dcInterval);
+            dataChannelLog.textContent += '- close\n';
+        };
+
+        document.addEventListener('keydown', function(event) {
+
+            if(event.keyCode == 39) {
+                console.log('Right was pressed');
+                var message = 'Right was pressed '
+                dc1.send(message);
+                }
+            });
 
 // End Gamepad
 

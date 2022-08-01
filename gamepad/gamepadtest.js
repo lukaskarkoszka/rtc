@@ -21,7 +21,7 @@ window.addEventListener('gamepadconnected', (event) => {
 });
 
 
-// https://www.javascripture.com/Gamepad 
+// https://www.javascripture.com/Gamepad
 //window.addEventListener('gamepadconnected', (event) => {
 //  const update = () => {
 //    const output = document.getElementById('axes');
