@@ -269,7 +269,7 @@ function stop() {
     // close peer connection
     setTimeout(function() {
         pc.close();
-    }, 500);
+    }, 1000);
 }
 
 function sdpFilterCodec(kind, codec, realSdp) {

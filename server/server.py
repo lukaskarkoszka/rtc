@@ -11,7 +11,7 @@ import cv2
 from aiohttp import web
 from av import VideoFrame
 from typing import Tuple
-
+from objectDetection import objectDetection
 import fractions
 
 from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription
@@ -42,7 +42,7 @@ class VideoTransformTrack(MediaStreamTrack):
         video = cv2.VideoCapture(1)
         video.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         video.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-
+        self.objectDetection = objectDetection()
         self.video = video
 
     async def next_timestamp(self) -> Tuple[int, fractions.Fraction]:
@@ -61,8 +61,7 @@ class VideoTransformTrack(MediaStreamTrack):
     async def recv(self):
         pts, time_base = await self.next_timestamp()
         res, img = self.video.read()
-        cv2.putText(img=img, text='Hello', org=(150, 250), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=3,
-                    color=(0, 255, 0), thickness=3)
+        img = self.objectDetection.detection(img)
         frame = VideoFrame.from_ndarray(img, format="bgr24")
         frame.pts = pts
         frame.time_base = time_base
@@ -193,11 +192,11 @@ if __name__ == "__main__":
     else:
         logging.basicConfig(level=logging.INFO)
 
-    if args.cert_file:
-        ssl_context = ssl.SSLContext()
-        ssl_context.load_cert_chain(args.cert_file, args.key_file)
-    else:
-        ssl_context = None
+    # if args.cert_file:
+    #     ssl_context = ssl.SSLContext()
+    #     ssl_context.load_cert_chain(args.cert_file, args.key_file)
+    # else:
+    ssl_context = None
 
     app = web.Application()
     app.on_shutdown.append(on_shutdown)
