@@ -171,20 +171,20 @@ function start() {
              };
 
 
-        dc1 = pc.createDataChannel('joy');
-        dc1.onclose = function() {
-            clearInterval(dcInterval);
-            dataChannelLog.textContent += '- close\n';
-        };
-
-        document.addEventListener('keydown', function(event) {
-
-            if(event.keyCode == 39) {
-                console.log('Right was pressed');
-                var message = 'Right was pressed '
-                dc1.send(message);
-                }
-            });
+//    dc1 = pc.createDataChannel('joy');
+//        dc1.onclose = function() {
+//            clearInterval(dcInterval);
+//            dataChannelLog.textContent += '- close\n';
+//        };
+//
+//        document.addEventListener('keydown', function(event) {
+//
+//            if(event.keyCode == 39) {
+//                console.log('Right was pressed');
+//                var message = 'Right was pressed '
+//                dc1.send(message);
+//                }
+//            });
 
 // End Gamepad
 
@@ -205,6 +205,9 @@ function start() {
 //            }
 //        };
 
+        dc.onmessage = function(evt) {
+            dataChannelLog.textContent = evt.data;
+         }
     }
 
     var constraints = {

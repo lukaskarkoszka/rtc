@@ -13,26 +13,23 @@ from av import VideoFrame
 from typing import Tuple
 from objectDetection import objectDetection
 import fractions
+import threading
 
 from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.media import MediaBlackhole, MediaPlayer, MediaRecorder, MediaRelay
 
+BBOX = None
 ROOT = os.path.dirname(__file__)
-
 logger = logging.getLogger("pc")
 pcs = set()
 relay = MediaRelay()
 VIDEO_CLOCK_RATE = 90000
 VIDEO_PTIME = 1 / 30  # 30fps
 VIDEO_TIME_BASE = fractions.Fraction(1, VIDEO_CLOCK_RATE)
-
 class MediaStreamError(Exception):
     pass
 
 class VideoTransformTrack(MediaStreamTrack):
-    """
-    A video stream track that transforms frames from an another track.
-    """
 
     kind = "video"
 
@@ -61,7 +58,9 @@ class VideoTransformTrack(MediaStreamTrack):
     async def recv(self):
         pts, time_base = await self.next_timestamp()
         res, img = self.video.read()
-        img = self.objectDetection.detection(img)
+        global BBOX
+        img, detection = self.objectDetection.detection(img)
+        BBOX = detection
         frame = VideoFrame.from_ndarray(img, format="bgr24")
         frame.pts = pts
         frame.time_base = time_base
@@ -122,6 +121,30 @@ async def offer(request):
                     except ValueError as e:
                         pass
 
+        #works very slowly
+        # def work(oldBbox):
+        #     while True:
+        #         if BBOX != oldBbox:
+        #             if channel and BBOX is not None:
+        #                 #channel.send(str(BBOX))
+        #                 print(BBOX)
+        #                 oldBbox = BBOX
+        #
+        # def sendBbox(oldBbox, loop):
+        #     asyncio.set_event_loop(loop)
+        #         asyncio.ensure_future(work(oldBbox))
+        #         loop.run_forever()
+        #     except KeyboardInterrupt:
+        #         pass
+        #     finally:
+        #         print("Closing Loop")
+        #         loop.close()
+        #
+        # if __name__ == "__main__":
+        #     loop = asyncio.new_event_loop()
+        #     x = threading.Thread(target=sendBbox, args=("", loop,))
+        #     x.start()
+
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
         log_info("Connection state is %s", pc.connectionState)
@@ -143,18 +166,33 @@ async def offer(request):
             if args.record_to:
                 recorder.addTrack(relay.subscribe(track))
 
+    # @pc.on('track')
+    # def on_track(track):
+    #     if track.kind == 'video':
+    #         local_video = VideoTransformTrack()
+    #         pc.addTrack(local_video)
+    #     @pc.on('datachannel')
+    #     def on_datachannel(channel):
+    #         @channel.on('message')
+    #         def on_message(message):
+    #             channel.send(str(local_video))
+
         @track.on("ended")
         async def on_ended():
             log_info("Track %s ended", track.kind)
             await recorder.stop()
 
-    # handle offer
     await pc.setRemoteDescription(offer)
-    await recorder.start()
-
-    # send answer
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
+
+    # # handle offer
+    # await pc.setRemoteDescription(offer)
+    # await recorder.start()
+    #
+    # # send answer
+    # answer = await pc.createAnswer()
+    # await pc.setLocalDescription(answer)
 
     return web.Response(
         content_type="application/json",
