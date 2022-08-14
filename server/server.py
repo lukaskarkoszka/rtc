@@ -19,6 +19,7 @@ from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.media import MediaBlackhole, MediaPlayer, MediaRecorder, MediaRelay
 
 BBOX = None
+OLDBBOX = None
 ROOT = os.path.dirname(__file__)
 logger = logging.getLogger("pc")
 pcs = set()
@@ -121,29 +122,14 @@ async def offer(request):
                     except ValueError as e:
                         pass
 
-        #works very slowly
-        # def work(oldBbox):
-        #     while True:
-        #         if BBOX != oldBbox:
-        #             if channel and BBOX is not None:
-        #                 #channel.send(str(BBOX))
-        #                 print(BBOX)
-        #                 oldBbox = BBOX
-        #
-        # def sendBbox(oldBbox, loop):
-        #     asyncio.set_event_loop(loop)
-        #         asyncio.ensure_future(work(oldBbox))
-        #         loop.run_forever()
-        #     except KeyboardInterrupt:
-        #         pass
-        #     finally:
-        #         print("Closing Loop")
-        #         loop.close()
-        #
-        # if __name__ == "__main__":
-        #     loop = asyncio.new_event_loop()
-        #     x = threading.Thread(target=sendBbox, args=("", loop,))
-        #     x.start()
+        if channel.label == "bbox":
+            @channel.on("message")
+            def on_message(message):
+                global OLDBBOX
+                if BBOX != OLDBBOX:
+                    if channel and BBOX is not None:
+                        channel.send(str(BBOX))
+                        OLDBBOX = BBOX
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():

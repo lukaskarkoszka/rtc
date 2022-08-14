@@ -126,23 +126,12 @@ function start() {
     }
 
     if (document.getElementById('use-datachannel').checked) {
-        dc = pc.createDataChannel('chat');
+        //sendGamepadAxis
+        dc = pc.createDataChannel('joy');
         dc.onclose = function() {
             clearInterval(dcInterval);
             dataChannelLog.textContent += '- close\n';
         };
-
-        document.addEventListener('keydown', function(event) {
-            if(event.keyCode == 37) {
-                var message = 'Left was pressed '
-                console.log('Left was pressed');
-                dc.send(message);
-                }
-
-            });
-
-// Start Gamepad
-
             dc.onopen = function() {
                 window.addEventListener('gamepadconnected', (event) => {
                     dcInterval = setInterval(function() {
@@ -169,45 +158,26 @@ function start() {
                     }, 10);
                 })
              };
+        //GetBbox
+        dc1 = pc.createDataChannel('bbox');
+        dc1.onclose = function() {
+            clearInterval(dcInterval);
+            dataChannelLog.textContent += '- close\n';
+        };
 
+        dc1.onopen = function() {
+            dcInterval = setInterval(function() {
+                const update = () => {
+                    dc1.send("getBbox");
+                };
+                update();
+            }, 10);
+        };
 
-//    dc1 = pc.createDataChannel('joy');
-//        dc1.onclose = function() {
-//            clearInterval(dcInterval);
-//            dataChannelLog.textContent += '- close\n';
-//        };
-//
-//        document.addEventListener('keydown', function(event) {
-//
-//            if(event.keyCode == 39) {
-//                console.log('Right was pressed');
-//                var message = 'Right was pressed '
-//                dc1.send(message);
-//                }
-//            });
-
-// End Gamepad
-
-//        dc.onopen = function() {
-//            dataChannelLog.textContent += '- open\n';
-//            dcInterval = setInterval(function() {
-//                var message = 'ping ' + current_stamp();
-//                dataChannelLog.textContent += '> ' + message + '\n';
-//                dc.send(message);
-//            }, 1000);
-//        };
-//        dc.onmessage = function(evt) {
-//            dataChannelLog.textContent += '< ' + evt.data + '\n';
-//
-//            if (evt.data.substring(0, 4) === 'pong') {
-//                var elapsed_ms = current_stamp() - parseInt(evt.data.substring(5), 10);
-//                dataChannelLog.textContent += ' RTT ' + elapsed_ms + ' ms\n';
-//            }
-//        };
-
-        dc.onmessage = function(evt) {
+        dc1.onmessage = function(evt) {
             dataChannelLog.textContent = evt.data;
          }
+
     }
 
     var constraints = {
