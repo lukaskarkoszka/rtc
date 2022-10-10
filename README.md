@@ -1,2 +1,2 @@
 # rtc
-run python server.py
+run "python server.py"
