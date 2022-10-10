@@ -13,18 +13,18 @@ class objectDetection():
         self.Object_detector = OBJ_DETECTION('weights/yolov5s.pt', self.classes)
 
     def detection(self, img):
-        start_time = time.clock()
+        #start_time = time.clock()
         detections = self.Object_detector.detect(img)
 
-        for detection in detections:
+        #for detection in detections:
             # print(obj)
-            label = detection['label']
-            score = detection['score']
-            [(xmin, ymin), (xmax, ymax)] = detection['bbox']
-            color = self.Object_colors[self.classes.index(label)]
-            img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), color, 2)
-            img = cv2.putText(img, f'{label} ({str(score)})', (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color,
-                                1, cv2.LINE_AA)
+            #label = detection['label']
+            #score = detection['score']
+            #[(xmin, ymin), (xmax, ymax)] = detection['bbox']
+            #color = self.Object_colors[self.classes.index(label)]
+            # img = cv2.rectangle(img, (xmin, ymin), (xmax, ymax), color, 2)
+            # img = cv2.putText(img, f'{label} ({str(score)})', (xmin, ymin), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color,
+            #                     1, cv2.LINE_AA)
 
         #print(time.clock() - start_time, "seconds")
         return img, detections

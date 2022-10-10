@@ -25,7 +25,7 @@ class OBJ_DETECTION():
             img = img.unsqueeze(0)
 
         pred = self.yolo_model(img, augment=False)[0]
-        pred = non_max_suppression(pred, conf_thres=0.25, iou_thres=0.45, classes=None)
+        pred = non_max_suppression(pred, conf_thres=0.50, iou_thres=0.45, classes=None)
         items = []
         
         if pred[0] is not None and len(pred):

@@ -18,6 +18,7 @@ import threading
 from aiortc import MediaStreamTrack, RTCPeerConnection, RTCSessionDescription
 from aiortc.contrib.media import MediaBlackhole, MediaPlayer, MediaRecorder, MediaRelay
 
+# BBOX = '[{"label":"person","bbox":[206,46,1264,727],"score":0.88}]'
 BBOX = None
 OLDBBOX = None
 ROOT = os.path.dirname(__file__)
@@ -76,6 +77,9 @@ async def javascript(request):
     content = open(os.path.join(ROOT, "client.js"), "r").read()
     return web.Response(content_type="application/javascript", text=content)
 
+async def css(request):
+    content = open(os.path.join(ROOT, "styles.css"), "r").read()
+    return web.Response(content_type="text/html", text=content)
 
 async def offer(request):
     params = await request.json()
@@ -130,6 +134,11 @@ async def offer(request):
                     if channel and BBOX is not None:
                         channel.send(str(BBOX))
                         OLDBBOX = BBOX
+
+        if channel.label == "track":
+            @channel.on("message")
+            def on_message(message):
+                log_info(str(message))
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
@@ -226,7 +235,8 @@ if __name__ == "__main__":
     app.on_shutdown.append(on_shutdown)
     app.router.add_get("/", index)
     app.router.add_get("/client.js", javascript)
+    app.router.add_get("/styles.css", css)
     app.router.add_post("/offer", offer)
     web.run_app(
-        app, access_log=None, host=args.host, port=args.port, ssl_context=ssl_context
+        app, access_log=None, host=args.host, port=args.port, ssl_context=None
     )

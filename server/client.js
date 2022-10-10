@@ -6,6 +6,7 @@ var dataChannelLog = document.getElementById('data-channel'),
 
 // peer connection
 var pc = null;
+var BBOX = null;
 
 // data channel
 
@@ -41,9 +42,40 @@ function createPeerConnection() {
     // connect audio / video
     pc.addEventListener('track', function(evt) {
         if (evt.track.kind == 'video')
-            document.getElementById('video').srcObject = evt.streams[0];
-        else
-            document.getElementById('audio').srcObject = evt.streams[0];
+            var video = evt.streams[0]
+            document.getElementById('video').srcObject = video;
+            var video  = document.getElementById('video');
+            var canvas = document.getElementById('canvas');
+            var ctx    = canvas.getContext('2d');
+
+            function drawBbox(item, index) {
+                ctx.beginPath();
+                ctx.lineWidth = "2";
+                ctx.strokeStyle = "blue";
+                ctx.font = "30px Verdana";
+                ctx.rect(item.bbox[0],item.bbox[1],item.bbox[2],item.bbox[3]);
+                ctx.stroke();
+                ctx.fillText(item.label,item.bbox[0], item.bbox[1]);
+            }
+
+            video.addEventListener('play', function () {
+                var $this = this; //cache
+                (function loop() {
+                    if (!$this.paused && !$this.ended) {
+                        if (!!BBOX){
+                            ctx.canvas.width  = video.videoWidth;
+                            ctx.canvas.height = video.videoHeight;
+                            canvas.style.width = video.videoWidth;
+                            canvas.style.height = video.videoHeight;
+                            BBOX.forEach(drawBbox)
+                        }
+                        setTimeout(loop, 1000 / 30); // drawing at 30fps
+                    }
+                })();
+            }, 0);
+
+//        else
+//            document.getElementById('audio').srcObject = evt.streams[0];
     });
 
     return pc;
@@ -133,6 +165,7 @@ function start() {
             dataChannelLog.textContent += '- close\n';
         };
             dc.onopen = function() {
+                var gamepadObjStrOld
                 window.addEventListener('gamepadconnected', (event) => {
                     dcInterval = setInterval(function() {
                         const update = () => {
@@ -150,9 +183,11 @@ function start() {
                                         gamepadObj.axes.push(axle);
                                     }
                             }
-                         console.log(gamepadObj);
                          var gamepadObjStr = JSON.stringify(gamepadObj);
-                        dc.send(gamepadObjStr);
+                        if (gamepadObjStr!= gamepadObjStrOld){
+                            dc.send(gamepadObjStr);
+                            gamepadObjStrOld = gamepadObjStr;
+                            }
                         };
                         update();
                     }, 10);
@@ -175,28 +210,46 @@ function start() {
         };
 
         dc1.onmessage = function(evt) {
-            dataChannelLog.textContent = evt.data;
+            BBOX = JSON.parse(evt.data.replaceAll(/'/g, '"').replaceAll("(", "").replaceAll(")", ""));
+            dataChannelLog.textContent = JSON.stringify(BBOX);
          }
+
+        //track
+        dc2 = pc.createDataChannel('track');
+        dc2.onclose = function() {
+            clearInterval(dcInterval);
+            dataChannelLog.textContent += '- close\n';
+        };
+
+
+        dc2.onopen = function() {
+            var canvas = document.getElementById('canvas');
+            canvas.addEventListener("click", function(element) {
+//                console.log(`mouse location = X: ${element.layerX}, Y: ${element.layerY}`)
+                BBOX.forEach(bbox =>{
+                    getSelectedBbox(bbox, element);
+                });
+            })
+
+            function getSelectedBbox(bbox, element) {
+              if (element.layerX > bbox.bbox[0] && element.layerX < bbox.bbox[2] && element.layerY > bbox.bbox[1] && element.layerY < bbox.bbox[3]){
+                sendSelectedBbox(bbox)
+              }
+            }
+
+            function sendSelectedBbox (selectedBbox){
+                var selectedBoundingBox =  {"BBOX": [{"X": selectedBbox.bbox[0] + ',' + selectedBbox.bbox[1], "Y": selectedBbox.bbox[2] + ',' +selectedBbox.bbox[3]}]}
+                var strSelectedBoundingBox = JSON.stringify(selectedBoundingBox);
+                dc2.send(strSelectedBoundingBox);
+                }
+        };
 
     }
 
     var constraints = {
         audio: document.getElementById('use-audio').checked,
-        video: false
+        video: true
     };
-
-    if (document.getElementById('use-video').checked) {
-        var resolution = document.getElementById('video-resolution').value;
-        if (resolution) {
-            resolution = resolution.split('x');
-            constraints.video = {
-                width: parseInt(resolution[0], 0),
-                height: parseInt(resolution[1], 0)
-            };
-        } else {
-            constraints.video = true;
-        }
-    }
 
     if (constraints.audio || constraints.video) {
         if (constraints.video) {
@@ -213,6 +266,11 @@ function start() {
     } else {
         negotiate();
     }
+
+    var canvas = document.querySelector('canvas');
+
+
+
 
     document.getElementById('stop').style.display = 'inline-block';
 }
