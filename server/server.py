@@ -68,24 +68,27 @@ class VideoTransformTrack(MediaStreamTrack):
         res, img = self.video.read()
 
 
-        if self.BBOX is not None:
-            if self.CLICK:
-                bbox = (int(self.BBOX[0]), int(self.BBOX[1]), int(self.BBOX[2]), int(self.BBOX[3]))
-                self.ok = self.tracker.init(img, bbox)
-                self.CLICK = False
+        if self.CLICK:
+            bbox = (int(self.BBOX[0]), int(self.BBOX[1]), int(self.BBOX[2]), int(self.BBOX[3]))
+            self.ok = self.tracker.init(img, bbox)
+            self.CLICK = False
+        if self.ok:
+            self.ok, bbox = self.tracker.update(img)
+            if self.ok:
+                p1 = (int(bbox[0]), int(bbox[1]))
+                p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+                cv2.rectangle(img, p1, p2, (0, 0, 255), 2, 1)
+                self.BBOX = bbox
             else:
-                self.ok, bbox = self.tracker.update(img)
-                if self.ok:
-                    p1 = (int(bbox[0]), int(bbox[1]))
-                    p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-                    cv2.rectangle(img, p1, p2, (255, 0, 0), 2, 1)
-                    self.BBOX = bbox
-                else:
-                    cv2.putText(img, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
-                    self.BBOX = None
+                cv2.putText(img, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
         else:
             img, detections = self.objectDetection.detection(img)
             self.BBOX = detections
+            if self.BBOX is not None:
+                for bbox in self.BBOX:
+                    p1 = (int(bbox[0]), int(bbox[1]))
+                    p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+                    cv2.rectangle(img, p1, p2, (255, 0, 0), 2, 1)
 
         frame = VideoFrame.from_ndarray(img, format="bgr24")
         frame.pts = pts
