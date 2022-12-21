@@ -238,7 +238,7 @@ function start() {
             }
 
             function sendSelectedBbox (selectedBbox){
-                var selectedBoundingBox =  {"BBOX": [{"X": selectedBbox.bbox[0] + ',' + selectedBbox.bbox[1], "Y": selectedBbox.bbox[2] + ',' +selectedBbox.bbox[3]}]}
+                var selectedBoundingBox =  {"BBOX": [{"selected": selectedBbox.bbox[0] + ',' + selectedBbox.bbox[1] + ',' + selectedBbox.bbox[2] + ',' + selectedBbox.bbox[3]}]}
                 var strSelectedBoundingBox = JSON.stringify(selectedBoundingBox);
                 dc2.send(strSelectedBoundingBox);
                 }
