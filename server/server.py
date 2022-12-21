@@ -65,10 +65,7 @@ class VideoTransformTrack(MediaStreamTrack):
 
     async def recv(self):
         pts, time_base = await self.next_timestamp()
-        print("pts: ", pts)
-        print("time_base: ", time_base)
         res, img = self.video.read()
-        print("res: ", res)
 
 
         if self.BBOX is not None:
