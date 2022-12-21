@@ -66,15 +66,15 @@ class VideoTransformTrack(MediaStreamTrack):
     async def recv(self):
         pts, time_base = await self.next_timestamp()
         res, img = self.video.read()
-
+        ok = False
 
         if self.CLICK:
             bbox = (int(self.BBOX[0]), int(self.BBOX[1]), int(self.BBOX[2]), int(self.BBOX[3]))
-            self.ok = self.tracker.init(img, bbox)
+            ok = self.tracker.init(img, bbox)
             self.CLICK = False
-        if self.ok:
-            self.ok, bbox = self.tracker.update(img)
-            if self.ok:
+        if ok:
+            ok, bbox = self.tracker.update(img)
+            if ok:
                 p1 = (int(bbox[0]), int(bbox[1]))
                 p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
                 cv2.rectangle(img, p1, p2, (0, 0, 255), 2, 1)
