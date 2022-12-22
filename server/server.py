@@ -90,7 +90,7 @@ class VideoTransformTrack(MediaStreamTrack):
                 ok, bbox = tracker.update(img)
                 if ok:
                     cv2.putText(img, "Tracking", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255), 2)
-                    BBOX[0]['bbox'] = [[bbox[0], bbox[1]], [bbox[2],bbox[3]]]
+                    BBOX[0]['bbox'] = [(bbox[0], bbox[1]), (bbox[2],bbox[3])]
                     print(BBOX)
                 else:
                     cv2.putText(img, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
@@ -98,6 +98,7 @@ class VideoTransformTrack(MediaStreamTrack):
             img, detections = self.objectDetection.detection(img)
             cv2.putText(img, "Detecting", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255,0,0), 2)
             BBOX = detections
+            print(BBOX)
 
         frame = VideoFrame.from_ndarray(img, format="bgr24")
         frame.pts = pts
