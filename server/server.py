@@ -30,8 +30,9 @@ relay = MediaRelay()
 VIDEO_CLOCK_RATE = 90000
 VIDEO_PTIME = 1 / 30  # 30fps
 VIDEO_TIME_BASE = fractions.Fraction(1, VIDEO_CLOCK_RATE)
-ok = False
+ok = None
 tracker = cv2.TrackerCSRT_create()
+initialized = False
 
 class MediaStreamError(Exception):
     pass
@@ -44,7 +45,7 @@ class VideoTransformTrack(MediaStreamTrack):
         super().__init__()  # don't forget this!
 
         video = cv2.VideoCapture()
-        video.open(1, cv2.CAP_DSHOW)
+        video.open(0, cv2.CAP_DSHOW)
         video.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         video.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.objectDetection = objectDetection()
@@ -69,24 +70,33 @@ class VideoTransformTrack(MediaStreamTrack):
         global BBOX
         global ok
         global tracker
+        global initialized
 
         pts, time_base = await self.next_timestamp()
         res, img = self.video.read()
 
         if CLICK:
             bbox = BBOX[0]['bbox']
+            bbox = (bbox[0][0], bbox[0][1], bbox[1][0], bbox[1][1])
+            print(bbox)
             ok = tracker.init(img, bbox)
+            initialized = True
             CLICK = False
-        if ok:
-            ok, bbox = tracker.update(img)
-            if ok:
-                cv2.putText(img, "Tracking", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (50, 170, 50), 2)
-                BBOX[0]['bbox'] = bbox
-
+        if initialized:
+            ok = res
+            if not ok:
+                cv2.putText(img, "Tracker init failed", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
             else:
-                cv2.putText(img, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+                ok, bbox = tracker.update(img)
+                if ok:
+                    cv2.putText(img, "Tracking", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255), 2)
+                    BBOX[0]['bbox'] = [[bbox[0], bbox[1]], [bbox[2],bbox[3]]]
+                    print(BBOX)
+                else:
+                    cv2.putText(img, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
         else:
             img, detections = self.objectDetection.detection(img)
+            cv2.putText(img, "Detecting", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255,0,0), 2)
             BBOX = detections
 
         frame = VideoFrame.from_ndarray(img, format="bgr24")
