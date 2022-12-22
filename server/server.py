@@ -31,7 +31,28 @@ VIDEO_CLOCK_RATE = 90000
 VIDEO_PTIME = 1 / 30  # 30fps
 VIDEO_TIME_BASE = fractions.Fraction(1, VIDEO_CLOCK_RATE)
 ok = None
-tracker = cv2.TrackerCSRT_create()
+
+tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'MOSSE', 'CSRT']
+tracker_type = tracker_types[7] #tracker type
+
+if tracker_type == 'BOOSTING':
+    tracker = cv2.TrackerBoosting_create() #nie ma
+if tracker_type == 'MIL':
+    tracker = cv2.TrackerMIL_create()
+if tracker_type == 'KCF':
+    tracker = cv2.TrackerKCF_create()
+if tracker_type == 'TLD':
+    tracker = cv2.TrackerTLD_create()
+if tracker_type == 'MEDIANFLOW':
+    tracker = cv2.TrackerMedianFlow_create()
+if tracker_type == 'GOTURN':
+    tracker = cv2.TrackerGOTURN_create()
+if tracker_type == 'MOSSE':
+    tracker = cv2.TrackerMOSSE_create()
+if tracker_type == "CSRT":
+    tracker = cv2.TrackerCSRT_create() #aktualnie używany
+
+
 initialized = False
 
 class MediaStreamError(Exception):
@@ -90,16 +111,25 @@ class VideoTransformTrack(MediaStreamTrack):
                 ok, bbox = tracker.update(img)
                 if ok:
                     cv2.putText(img, "Tracking", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255), 2)
-                    BBOX[0]['bbox'] = [(bbox[0], bbox[1]), (bbox[2],bbox[3])]
+                    p1 = (int(bbox[0]), int(bbox[1]))
+                    p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+                    cv2.rectangle(img, p1, p2, (0,0,255), 2, 1)
+                    BBOX[0]['bbox'] = [(int(bbox[0]), int(bbox[1])), (int(bbox[2]),int(bbox[3]))]
                     # print(BBOX)
                 else:
                     cv2.putText(img, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+                    initialized = False
         else:
             img, detections = self.objectDetection.detection(img)
-            cv2.putText(img, "Detecting", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255,0,0), 2)
             BBOX = detections
+            cv2.putText(img, "Detecting", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
+            bbox = BBOX[0]['bbox']
+            bbox = (bbox[0][0], bbox[0][1], bbox[1][0], bbox[1][1])
+            p1 = (int(bbox[0]), int(bbox[1]))
+            p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+            cv2.rectangle(img, p1, p2, (0, 255, 0), 2, 1)
             # print(BBOX)
-
+        # print(BBOX)
         frame = VideoFrame.from_ndarray(img, format="bgr24")
         frame.pts = pts
         frame.time_base = time_base
