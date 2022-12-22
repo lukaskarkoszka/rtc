@@ -44,7 +44,7 @@ class VideoTransformTrack(MediaStreamTrack):
         super().__init__()  # don't forget this!
 
         video = cv2.VideoCapture()
-        video.open(0, cv2.CAP_DSHOW)
+        video.open(1, cv2.CAP_DSHOW)
         video.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         video.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.objectDetection = objectDetection()
@@ -119,12 +119,8 @@ async def offer(request):
 
     log_info("Created for %s", request.remote)
 
-    # prepare local media
-    player = MediaPlayer(os.path.join(ROOT, "demo-instruct.wav"))
-    if args.record_to:
-        recorder = MediaRecorder(args.record_to)
-    else:
-        recorder = MediaBlackhole()
+    video = VideoTransformTrack()
+    video_sender = pc.addTrack(video)
 
     @pc.on("datachannel")
     def on_datachannel(channel):
@@ -175,47 +171,11 @@ async def offer(request):
             await pc.close()
             pcs.discard(pc)
 
-    @pc.on("track")
-    def on_track(track):
-        log_info("Track %s received", track.kind)
-
-        if track.kind == "audio":
-            pc.addTrack(player.audio)
-            recorder.addTrack(track)
-        elif track.kind == "video":
-            pc.addTrack(
-                VideoTransformTrack()
-            )
-            if args.record_to:
-                recorder.addTrack(relay.subscribe(track))
-
-    # @pc.on('track')
-    # def on_track(track):
-    #     if track.kind == 'video':
-    #         local_video = VideoTransformTrack()
-    #         pc.addTrack(local_video)
-    #     @pc.on('datachannel')
-    #     def on_datachannel(channel):
-    #         @channel.on('message')
-    #         def on_message(message):
-    #             channel.send(str(local_video))
-
-        @track.on("ended")
-        async def on_ended():
-            log_info("Track %s ended", track.kind)
-            await recorder.stop()
 
     await pc.setRemoteDescription(offer)
     answer = await pc.createAnswer()
     await pc.setLocalDescription(answer)
 
-    # # handle offer
-    # await pc.setRemoteDescription(offer)
-    # await recorder.start()
-    #
-    # # send answer
-    # answer = await pc.createAnswer()
-    # await pc.setLocalDescription(answer)
 
     return web.Response(
         content_type="application/json",

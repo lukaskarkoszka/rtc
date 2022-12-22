@@ -74,8 +74,6 @@ function createPeerConnection() {
                 })();
             }, 0);
 
-//        else
-//            document.getElementById('audio').srcObject = evt.streams[0];
     });
 
     return pc;
@@ -105,15 +103,6 @@ function negotiate() {
         var offer = pc.localDescription;
         var codec;
 
-        codec = document.getElementById('audio-codec').value;
-        if (codec !== 'default') {
-            offer.sdp = sdpFilterCodec('audio', codec, offer.sdp);
-        }
-
-        codec = document.getElementById('video-codec').value;
-        if (codec !== 'default') {
-            offer.sdp = sdpFilterCodec('video', codec, offer.sdp);
-        }
 
         document.getElementById('offer-sdp').textContent = offer.sdp;
         return fetch('/offer', {
@@ -251,21 +240,9 @@ function start() {
         video: true
     };
 
-    if (constraints.audio || constraints.video) {
-        if (constraints.video) {
-            document.getElementById('media').style.display = 'block';
-        }
-        navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
-            stream.getTracks().forEach(function(track) {
-                pc.addTrack(track, stream);
-            });
-            return negotiate();
-        }, function(err) {
-            alert('Could not acquire media: ' + err);
-        });
-    } else {
-        negotiate();
-    }
+    document.getElementById('media').style.display = 'block';
+    pc.addTransceiver('video', {direction: 'recvonly'});
+    negotiate();
 
     var canvas = document.querySelector('canvas');
 
