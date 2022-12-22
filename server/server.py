@@ -123,11 +123,14 @@ class VideoTransformTrack(MediaStreamTrack):
             img, detections = self.objectDetection.detection(img)
             BBOX = detections
             cv2.putText(img, "Detecting", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
-            bbox = BBOX[0]['bbox']
-            bbox = (bbox[0][0], bbox[0][1], bbox[1][0], bbox[1][1])
-            p1 = (int(bbox[0]), int(bbox[1]))
-            p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-            cv2.rectangle(img, p1, p2, (0, 255, 0), 2, 1)
+            try:
+                bbox = BBOX[0]['bbox']
+                bbox = (bbox[0][0], bbox[0][1], bbox[1][0], bbox[1][1])
+                p1 = (int(bbox[0]), int(bbox[1]))
+                p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
+                cv2.rectangle(img, p1, p2, (0, 255, 0), 2, 1)
+            except:
+                pass
             # print(BBOX)
         # print(BBOX)
         frame = VideoFrame.from_ndarray(img, format="bgr24")
