@@ -85,20 +85,20 @@ class VideoTransformTrack(MediaStreamTrack):
         if initialized:
             ok = res
             if not ok:
-                cv2.putText(img, "Tracker init failed", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
+                print("Tracker init failed")
             else:
                 ok, bbox = tracker.update(img)
                 if ok:
                     cv2.putText(img, "Tracking", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255), 2)
                     BBOX[0]['bbox'] = [(bbox[0], bbox[1]), (bbox[2],bbox[3])]
-                    print(BBOX)
+                    # print(BBOX)
                 else:
                     cv2.putText(img, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
         else:
             img, detections = self.objectDetection.detection(img)
             cv2.putText(img, "Detecting", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255,0,0), 2)
             BBOX = detections
-            print(BBOX)
+            # print(BBOX)
 
         frame = VideoFrame.from_ndarray(img, format="bgr24")
         frame.pts = pts
@@ -162,8 +162,8 @@ async def offer(request):
         if channel.label == "bbox":
             @channel.on("message")
             def on_message(message):
-                global OLDBBOX
-                if BBOX != OLDBBOX:
+                # global OLDBBOX
+                # if BBOX != OLDBBOX:
                     if channel and BBOX is not None:
                         channel.send(str(BBOX))
                         OLDBBOX = BBOX
