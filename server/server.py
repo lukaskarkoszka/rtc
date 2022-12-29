@@ -89,7 +89,10 @@ class VideoTransformTrack(MediaStreamTrack):
             bbox = self.objectTracking.tracking(img)
             if bbox is None:
                 initialized = False
-                return
+                frame = VideoFrame.from_ndarray(img, format="bgr24")
+                frame.pts = pts
+                frame.time_base = time_base
+                return frame
             BBOX[0]['bbox'] = [(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3]))]
         else:
             img, detections = self.objectDetection.detection(img)
@@ -169,6 +172,7 @@ async def offer(request):
                 global CLICK
                 log_info(str(message))
                 CLICK = [True, message]
+                print(CLICK)
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():
