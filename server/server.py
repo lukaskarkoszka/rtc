@@ -12,6 +12,7 @@ from aiohttp import web
 from av import VideoFrame
 from typing import Tuple
 from objectDetection import objectDetection
+from objectTracking import objectTracking
 import fractions
 import threading
 
@@ -22,7 +23,8 @@ from aiortc.contrib.media import MediaBlackhole, MediaPlayer, MediaRecorder, Med
 
 BBOX = None
 OLDBBOX = None
-CLICK = False
+CLICK = [False, None]
+initialized = False
 ROOT = os.path.dirname(__file__)
 logger = logging.getLogger("pc")
 pcs = set()
@@ -30,30 +32,8 @@ relay = MediaRelay()
 VIDEO_CLOCK_RATE = 90000
 VIDEO_PTIME = 1 / 30  # 30fps
 VIDEO_TIME_BASE = fractions.Fraction(1, VIDEO_CLOCK_RATE)
-ok = None
-
-tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN', 'MOSSE', 'CSRT']
-tracker_type = tracker_types[7] #tracker type
-
-if tracker_type == 'BOOSTING':
-    tracker = cv2.TrackerBoosting_create() #nie ma
-if tracker_type == 'MIL':
-    tracker = cv2.TrackerMIL_create()
-if tracker_type == 'KCF':
-    tracker = cv2.TrackerKCF_create()
-if tracker_type == 'TLD':
-    tracker = cv2.TrackerTLD_create()
-if tracker_type == 'MEDIANFLOW':
-    tracker = cv2.TrackerMedianFlow_create()
-if tracker_type == 'GOTURN':
-    tracker = cv2.TrackerGOTURN_create()
-if tracker_type == 'MOSSE':
-    tracker = cv2.TrackerMOSSE_create()
-if tracker_type == "CSRT":
-    tracker = cv2.TrackerCSRT_create() #aktualnie używany
 
 
-initialized = False
 
 class MediaStreamError(Exception):
     pass
@@ -70,6 +50,7 @@ class VideoTransformTrack(MediaStreamTrack):
         video.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         video.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.objectDetection = objectDetection()
+        self.objectTracking = objectTracking()
         self.video = video
 
     async def next_timestamp(self) -> Tuple[int, fractions.Fraction]:
@@ -89,50 +70,31 @@ class VideoTransformTrack(MediaStreamTrack):
         #BBOX = [{"label":"person","bbox":[206,46,1264,727],"score":0.88}]
         global CLICK
         global BBOX
-        global ok
-        global tracker
         global initialized
 
         pts, time_base = await self.next_timestamp()
         res, img = self.video.read()
 
-        if CLICK:
-            bbox = BBOX[0]['bbox']
-            bbox = (bbox[0][0], bbox[0][1], bbox[1][0], bbox[1][1])
-            print(bbox)
-            ok = tracker.init(img, bbox)
+
+        if CLICK[0]:
+            initialized = self.objectTracking.initialize(img, CLICK[1])
+            CLICK[0] = False
             initialized = True
-            CLICK = False
+            frame = VideoFrame.from_ndarray(img, format="bgr24")
+            frame.pts = pts
+            frame.time_base = time_base
+            return frame
+
         if initialized:
-            ok = res
-            if not ok:
-                print("Tracker init failed")
-            else:
-                ok, bbox = tracker.update(img)
-                if ok:
-                    cv2.putText(img, "Tracking", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,255), 2)
-                    p1 = (int(bbox[0]), int(bbox[1]))
-                    p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-                    cv2.rectangle(img, p1, p2, (0,0,255), 2, 1)
-                    BBOX[0]['bbox'] = [(int(bbox[0]), int(bbox[1])), (int(bbox[2]),int(bbox[3]))]
-                    # print(BBOX)
-                else:
-                    cv2.putText(img, "Tracking failure detected", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 255), 2)
-                    initialized = False
+            bbox = self.objectTracking.tracking(img)
+            if bbox is None:
+                initialized = False
+                return
+            BBOX[0]['bbox'] = [(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3]))]
         else:
             img, detections = self.objectDetection.detection(img)
             BBOX = detections
-            cv2.putText(img, "Detecting", (100, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 0), 2)
-            try:
-                bbox = BBOX[0]['bbox']
-                bbox = (bbox[0][0], bbox[0][1], bbox[1][0], bbox[1][1])
-                p1 = (int(bbox[0]), int(bbox[1]))
-                p2 = (int(bbox[0] + bbox[2]), int(bbox[1] + bbox[3]))
-                cv2.rectangle(img, p1, p2, (0, 255, 0), 2, 1)
-            except:
-                pass
-            # print(BBOX)
-        # print(BBOX)
+
         frame = VideoFrame.from_ndarray(img, format="bgr24")
         frame.pts = pts
         frame.time_base = time_base
@@ -195,18 +157,18 @@ async def offer(request):
         if channel.label == "bbox":
             @channel.on("message")
             def on_message(message):
-                # global OLDBBOX
+                global OLDBBOX
                 # if BBOX != OLDBBOX:
-                    if channel and BBOX is not None:
-                        channel.send(str(BBOX))
-                        OLDBBOX = BBOX
+                if channel and BBOX is not None:
+                    channel.send(str(BBOX))
+                    OLDBBOX = BBOX
 
         if channel.label == "track":
             @channel.on("message")
             def on_message(message):
                 global CLICK
                 log_info(str(message))
-                CLICK = True
+                CLICK = [True, message]
 
     @pc.on("connectionstatechange")
     async def on_connectionstatechange():

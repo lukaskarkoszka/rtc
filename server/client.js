@@ -195,7 +195,7 @@ function start() {
                     dc1.send("getBbox");
                 };
                 update();
-            }, 10);
+            }, 100);
         };
 
         dc1.onmessage = function(evt) {
