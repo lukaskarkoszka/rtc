@@ -30,7 +30,7 @@ logger = logging.getLogger("pc")
 pcs = set()
 relay = MediaRelay()
 VIDEO_CLOCK_RATE = 90000
-VIDEO_PTIME = 1 / 30  # 30fps
+VIDEO_PTIME = 1 / 10  # 30fps7
 VIDEO_TIME_BASE = fractions.Fraction(1, VIDEO_CLOCK_RATE)
 
 
@@ -72,6 +72,12 @@ class VideoTransformTrack(MediaStreamTrack):
         global BBOX
         global initialized
 
+        def _create_frame():
+            frame = VideoFrame.from_ndarray(img, format="bgr24")
+            frame.pts = pts
+            frame.time_base = time_base
+            return frame
+
         pts, time_base = await self.next_timestamp()
         res, img = self.video.read()
 
@@ -80,28 +86,21 @@ class VideoTransformTrack(MediaStreamTrack):
             initialized = self.objectTracking.initialize(img, CLICK[1])
             CLICK[0] = False
             initialized = True
-            frame = VideoFrame.from_ndarray(img, format="bgr24")
-            frame.pts = pts
-            frame.time_base = time_base
-            return frame
+            return _create_frame()
 
         if initialized:
             bbox = self.objectTracking.tracking(img)
             if bbox is None:
                 initialized = False
-                frame = VideoFrame.from_ndarray(img, format="bgr24")
-                frame.pts = pts
-                frame.time_base = time_base
-                return frame
+                return _create_frame()
             BBOX[0]['bbox'] = [(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3]))]
         else:
             img, detections = self.objectDetection.detection(img)
             BBOX = detections
 
-        frame = VideoFrame.from_ndarray(img, format="bgr24")
-        frame.pts = pts
-        frame.time_base = time_base
-        return frame
+        return _create_frame()
+
+
 
 async def index(request):
     content = open(os.path.join(ROOT, "index.html"), "r").read()

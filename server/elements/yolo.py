@@ -32,10 +32,12 @@ class OBJ_DETECTION():
             for p in pred[0]:
                 score = np.round(p[4].cpu().detach().numpy(),2)
                 label = self.classes[int(p[5])]
-                xmin = int(p[0] * main_img.shape[1] /self.input_width)
-                ymin = int(p[1] * main_img.shape[0] /new_height)
-                xmax = int(p[2] * main_img.shape[1] /self.input_width)
-                ymax = int(p[3] * main_img.shape[0] /new_height)
+
+                xmin = int(p[0].cpu().detach().numpy()*(width/self.input_width))
+                ymin = int(p[1].cpu().detach().numpy()*(height/new_height))
+                xmax = int(p[2].cpu().detach().numpy()*(width/self.input_width))
+                ymax = int(p[3].cpu().detach().numpy()*(height/new_height))
+
 
                 item = {'label': label,
                         'bbox' : [(xmin,ymin),(xmax,ymax)],

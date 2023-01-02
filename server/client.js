@@ -53,9 +53,9 @@ function createPeerConnection() {
                 ctx.lineWidth = "2";
                 ctx.strokeStyle = "blue";
                 ctx.font = "30px Verdana";
-                ctx.rect(item.bbox[0],item.bbox[1],item.bbox[2],item.bbox[3]);
+                ctx.rect(item.bbox[0],item.bbox[1],(item.bbox[2] - item.bbox[0]),(item.bbox[3] - item.bbox[1]));
                 ctx.stroke();
-                ctx.fillText(item.label,item.bbox[0], item.bbox[1]);
+                ctx.fillText(item.label,item.bbox[0], item.bbox[1])
             }
 
             video.addEventListener('play', function () {
@@ -65,8 +65,6 @@ function createPeerConnection() {
                         if (!!BBOX){
                             ctx.canvas.width  = video.videoWidth;
                             ctx.canvas.height = video.videoHeight;
-                            canvas.style.width = video.videoWidth;
-                            canvas.style.height = video.videoHeight;
                             BBOX.forEach(drawBbox)
                         }
                         setTimeout(loop, 1000 / 30); // drawing at 30fps
@@ -216,7 +214,9 @@ function start() {
             canvas.addEventListener("click", function(element) {
 //                console.log(`mouse location = X: ${element.layerX}, Y: ${element.layerY}`)
                 BBOX.forEach(bbox =>{
-                    getSelectedBbox(bbox, element);
+                    if (bbox === BBOX[BBOX.length-1]) {
+                        getSelectedBbox(bbox, element);
+                    }
                 });
             })
 
