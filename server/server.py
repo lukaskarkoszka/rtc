@@ -94,11 +94,14 @@ class VideoTransformTrack(MediaStreamTrack):
                 initialized = False
                 return _create_frame()
             BBOX[0]['bbox'] = [(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3]))]
+            return _create_frame()
+
         else:
             img, detections = self.objectDetection.detection(img)
             BBOX = detections
+            return _create_frame()
 
-        return _create_frame()
+
 
 
 
