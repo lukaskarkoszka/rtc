@@ -93,7 +93,8 @@ class VideoTransformTrack(MediaStreamTrack):
             if bbox is None:
                 initialized = False
                 return _create_frame()
-            BBOX[-1]['bbox'] = [(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3]))]
+            BBOX = [BBOX[-1]]
+            BBOX[0]['bbox'] = [(int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3]))]
             return _create_frame()
 
         else:
