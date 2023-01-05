@@ -50,7 +50,6 @@ class VideoTransformTrack(MediaStreamTrack):
         video.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
         video.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
         self.objectDetection = objectDetection()
-        self.objectTracking = objectTracking()
         self.video = video
 
     async def next_timestamp(self) -> Tuple[int, fractions.Fraction]:
@@ -65,7 +64,6 @@ class VideoTransformTrack(MediaStreamTrack):
             self._start = time.time()
             self._timestamp = 0
         return self._timestamp, VIDEO_TIME_BASE
-
     async def recv(self):
         #BBOX = [{"label":"person","bbox":[206,46,1264,727],"score":0.88}]
         global CLICK
@@ -83,6 +81,7 @@ class VideoTransformTrack(MediaStreamTrack):
 
 
         if CLICK[0]:
+            self.objectTracking = objectTracking()
             initialized = self.objectTracking.initialize(img, CLICK[1])
             CLICK[0] = False
             initialized = True
