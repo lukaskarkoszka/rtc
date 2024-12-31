@@ -1,0 +1,13 @@
+matplotlib
+pyyaml
+torchvision
+tqdm
+Pillow
+PIL
+requests
+pandas
+torch
+av
+aiohttp
+opencv-python
+aiortc
